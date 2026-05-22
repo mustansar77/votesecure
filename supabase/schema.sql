@@ -280,5 +280,5 @@ INSERT INTO public.elections (title, description, position, location, max_voters
   500,
   NOW() + INTERVAL '10 days',
   NOW() + INTERVAL '17 days',
-  'upcoming'
+  'upcoming'   
 );
