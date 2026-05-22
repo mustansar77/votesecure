@@ -43,12 +43,20 @@ export default function RegisterPage() {
         password: form.password,
         options: {
           data: { name: form.name, cnic: form.cnic, phone: form.phone, role: "voter" },
-          emailRedirectTo: `${window.location.origin}/verify`,
         },
       });
 
       if (signUpError) { setError(signUpError.message); return; }
-      router.push("/verify?email=" + encodeURIComponent(form.email));
+
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: form.email,
+        password: form.password,
+      });
+
+      if (signInError) { setError(signInError.message); return; }
+
+      router.push("/voter/dashboard");
+      router.refresh();
     } finally {
       setLoading(false);
     }

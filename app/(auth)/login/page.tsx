@@ -41,11 +41,13 @@ export default function LoginPage() {
         .eq("id", data.user!.id)
         .single() as { data: { role: string } | null; error: unknown };
 
-      if (profile?.role === "admin" || profile?.role === "commissioner") {
-        router.push("/admin/dashboard");
-      } else {
-        router.push("/dashboard");
-      }
+      const roleRedirects: Record<string, string> = {
+        super_admin: "/superadmin/dashboard",
+        admin: "/admin/dashboard",
+        candidate: "/candidate/dashboard",
+        voter: "/voter/dashboard",
+      };
+      router.push(roleRedirects[profile?.role ?? "voter"] ?? "/voter/dashboard");
       router.refresh();
     } finally {
       setLoading(false);
@@ -114,8 +116,12 @@ export default function LoginPage() {
               Register here
             </Link>
           </p>
-          <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-2.5 text-xs text-amber-700 dark:bg-amber-900/20 dark:border-amber-800 dark:text-amber-400">
-            Demo admin: <strong>admin@votesecure.pk</strong> / <strong>Admin@1234</strong>
+          <div className="rounded-lg bg-slate-50 border border-slate-200 px-4 py-3 text-xs text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 text-left space-y-1">
+            <p className="font-semibold text-slate-700 dark:text-slate-300">Roles &amp; Redirects:</p>
+            <p>🗳️ <strong>Voter</strong> → /voter/dashboard</p>
+            <p>🏛️ <strong>Candidate</strong> → /candidate/dashboard</p>
+            <p>🛡️ <strong>Admin</strong> → /admin/dashboard</p>
+            <p>👑 <strong>Super Admin</strong> → /superadmin/dashboard</p>
           </div>
         </div>
       </div>

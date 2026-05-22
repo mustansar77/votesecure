@@ -1,144 +1,76 @@
 export type Json = string | number | boolean | null | { [key: string]: Json } | Json[];
 
-export interface Database {
-  public: {
-    Tables: {
-      profiles: {
-        Row: {
-          id: string;
-          name: string;
-          cnic: string;
-          phone: string | null;
-          role: "voter" | "admin" | "commissioner";
-          is_verified: boolean;
-          created_at: string;
-        };
-        Insert: {
-          id: string;
-          name: string;
-          cnic: string;
-          phone?: string | null;
-          role?: "voter" | "admin" | "commissioner";
-          is_verified?: boolean;
-          created_at?: string;
-        };
-        Update: {
-          name?: string;
-          cnic?: string;
-          phone?: string | null;
-          role?: "voter" | "admin" | "commissioner";
-          is_verified?: boolean;
-        };
-      };
-      elections: {
-        Row: {
-          id: string;
-          title: string;
-          description: string | null;
-          start_date: string;
-          end_date: string;
-          status: "upcoming" | "active" | "closed";
-          created_by: string | null;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          title: string;
-          description?: string | null;
-          start_date: string;
-          end_date: string;
-          status?: "upcoming" | "active" | "closed";
-          created_by?: string | null;
-          created_at?: string;
-        };
-        Update: {
-          title?: string;
-          description?: string | null;
-          start_date?: string;
-          end_date?: string;
-          status?: "upcoming" | "active" | "closed";
-        };
-      };
-      candidates: {
-        Row: {
-          id: string;
-          election_id: string;
-          name: string;
-          party: string | null;
-          symbol: string | null;
-          bio: string | null;
-          vote_count: number;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          election_id: string;
-          name: string;
-          party?: string | null;
-          symbol?: string | null;
-          bio?: string | null;
-          vote_count?: number;
-          created_at?: string;
-        };
-        Update: {
-          name?: string;
-          party?: string | null;
-          symbol?: string | null;
-          bio?: string | null;
-          vote_count?: number;
-        };
-      };
-      votes: {
-        Row: {
-          id: string;
-          election_id: string;
-          candidate_id: string;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          election_id: string;
-          candidate_id: string;
-          created_at?: string;
-        };
-        Update: Record<string, never>;
-      };
-      voter_participation: {
-        Row: {
-          voter_id: string;
-          election_id: string;
-          voted_at: string;
-        };
-        Insert: {
-          voter_id: string;
-          election_id: string;
-          voted_at?: string;
-        };
-        Update: Record<string, never>;
-      };
-      auth_logs: {
-        Row: {
-          id: string;
-          user_id: string | null;
-          attempt_time: string;
-          status: string;
-          ip_address: string | null;
-        };
-        Insert: {
-          id?: string;
-          user_id?: string | null;
-          attempt_time?: string;
-          status: string;
-          ip_address?: string | null;
-        };
-        Update: Record<string, never>;
-      };
-    };
-  };
+export type UserRole = "voter" | "admin" | "super_admin" | "candidate";
+export type ElectionStatus = "upcoming" | "active" | "closed" | "announced";
+export type CandidateStatus = "pending" | "approved" | "rejected";
+
+export interface Profile {
+  id: string;
+  name: string | null;
+  father_name: string | null;
+  cnic: string | null;
+  date_of_birth: string | null;
+  address: string | null;
+  village: string | null;
+  city: string | null;
+  education: string | null;
+  phone: string | null;
+  role: UserRole;
+  is_verified: boolean;
+  created_at: string;
 }
 
-export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
-export type Election = Database["public"]["Tables"]["elections"]["Row"];
-export type Candidate = Database["public"]["Tables"]["candidates"]["Row"];
-export type Vote = Database["public"]["Tables"]["votes"]["Row"];
-export type AuthLog = Database["public"]["Tables"]["auth_logs"]["Row"];
+export interface Election {
+  id: string;
+  title: string;
+  description: string | null;
+  position: string;
+  location: string;
+  max_voters: number | null;
+  start_date: string;
+  end_date: string;
+  status: ElectionStatus;
+  winner_id: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+export interface Candidate {
+  id: string;
+  election_id: string;
+  profile_id: string;
+  vote_count: number;
+  status: CandidateStatus;
+  created_at: string;
+  profiles?: Profile;
+  elections?: Election;
+}
+
+export interface Vote {
+  id: string;
+  election_id: string;
+  candidate_id: string;
+  created_at: string;
+}
+
+export interface VoterParticipation {
+  voter_id: string;
+  election_id: string;
+  voted_at: string;
+}
+
+export interface AuthLog {
+  id: string;
+  user_id: string | null;
+  attempt_time: string;
+  status: string;
+  ip_address: string | null;
+}
+
+export function isVoterProfileComplete(p: Profile): boolean {
+  return !!(p.name && p.father_name && p.cnic && p.date_of_birth && p.address);
+}
+
+export function isCandidateProfileComplete(p: Profile): boolean {
+  return !!(p.name && p.father_name && p.cnic && p.date_of_birth && p.address && p.education);
+}

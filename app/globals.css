@@ -7,6 +7,14 @@
 */
 @variant dark (&:where(.dark, .dark *));
 
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #0f172a;
