@@ -6,12 +6,14 @@ import {
 } from "recharts";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
-import type { Candidate } from "@/types/database";
+import type { Candidate, Profile } from "@/types/database";
 
 const COLORS = ["#3b82f6", "#8b5cf6", "#10b981", "#f59e0b", "#ef4444", "#06b6d4", "#84cc16"];
 
+type CandidateWithProfile = Candidate & { profiles?: Profile };
+
 interface ResultsChartProps {
-  candidates: Candidate[];
+  candidates: CandidateWithProfile[];
 }
 
 export function ResultsBarChart({ candidates }: ResultsChartProps) {
@@ -24,7 +26,10 @@ export function ResultsBarChart({ candidates }: ResultsChartProps) {
   const textColor = isDark ? "#94a3b8" : "#64748b";
   const gridColor = isDark ? "#334155" : "#e2e8f0";
 
-  const data = candidates.map((c) => ({ name: c.name.split(" ")[0], votes: c.vote_count, party: c.party ?? "" }));
+  const data = candidates.map((c) => ({
+    name: (c.profiles?.name ?? "Unknown").split(" ")[0],
+    votes: c.vote_count,
+  }));
   const total = candidates.reduce((s, c) => s + c.vote_count, 0);
 
   return (
@@ -37,9 +42,9 @@ export function ResultsBarChart({ candidates }: ResultsChartProps) {
           <Tooltip
             contentStyle={{ background: isDark ? "#1e293b" : "#fff", border: `1px solid ${gridColor}`, borderRadius: 8 }}
             labelStyle={{ color: isDark ? "#f1f5f9" : "#0f172a", fontWeight: 600 }}
-            formatter={(val, _name, props) => {
+            formatter={(val) => {
               const v = Number(val);
-              return [`${v.toLocaleString()} votes (${total ? ((v / total) * 100).toFixed(1) : 0}%)`, (props as { payload?: { party?: string } }).payload?.party || "Votes"];
+              return [`${v.toLocaleString()} votes (${total ? ((v / total) * 100).toFixed(1) : 0}%)`, "Votes"];
             }}
           />
           <Bar dataKey="votes" radius={[6, 6, 0, 0]}>
@@ -62,7 +67,7 @@ export function ResultsPieChart({ candidates }: ResultsChartProps) {
   const total = candidates.reduce((s, c) => s + c.vote_count, 0);
 
   const data = candidates.map((c) => ({
-    name: c.name,
+    name: c.profiles?.name ?? "Unknown",
     value: c.vote_count,
     pct: total ? ((c.vote_count / total) * 100).toFixed(1) : "0",
   }));

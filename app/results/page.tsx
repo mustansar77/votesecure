@@ -4,7 +4,9 @@ import { Footer } from "@/components/layout/footer";
 import { Card } from "@/components/ui/card";
 import { LiveResults } from "@/components/charts/live-results";
 import { BarChart2 } from "lucide-react";
-import type { Election, Candidate } from "@/types/database";
+import type { Election, Candidate, Profile } from "@/types/database";
+
+type CandidateWithProfile = Candidate & { profiles: Profile };
 
 async function getResults() {
   const supabase = await createClient();
@@ -20,9 +22,10 @@ async function getResults() {
     elections.map(async (election) => {
       const { data: candidates } = await (supabase
         .from("candidates")
-        .select("*")
+        .select("*, profiles(*)")
         .eq("election_id", election.id)
-        .order("vote_count", { ascending: false }) as unknown as Promise<{ data: Candidate[] | null; error: unknown }>);
+        .eq("status", "approved")
+        .order("vote_count", { ascending: false }) as unknown as Promise<{ data: CandidateWithProfile[] | null; error: unknown }>);
       return { election, candidates: candidates ?? [] };
     })
   );

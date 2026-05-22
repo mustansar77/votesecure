@@ -7,16 +7,18 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { ElectionStatusBadge } from "@/components/ui/badge";
 import { Trophy, Users, Wifi, WifiOff } from "lucide-react";
 import { formatDate } from "@/lib/utils";
-import type { Election, Candidate } from "@/types/database";
+import type { Election, Candidate, Profile } from "@/types/database";
+
+type CandidateWithProfile = Candidate & { profiles: Profile };
 
 interface LiveResultsProps {
-  initialCandidates: Candidate[];
+  initialCandidates: CandidateWithProfile[];
   election: Election;
 }
 
 export function LiveResults({ initialCandidates, election }: LiveResultsProps) {
   const supabase = createClient();
-  const [candidates, setCandidates] = useState<Candidate[]>(initialCandidates);
+  const [candidates, setCandidates] = useState<CandidateWithProfile[]>(initialCandidates);
   const [isLive, setIsLive] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [flashId, setFlashId] = useState<string | null>(null);
@@ -35,7 +37,7 @@ export function LiveResults({ initialCandidates, election }: LiveResultsProps) {
         (payload) => {
           const updated = payload.new as Candidate;
           setCandidates((prev) =>
-            [...prev.map((c) => (c.id === updated.id ? updated : c))]
+            [...prev.map((c) => (c.id === updated.id ? { ...c, ...updated } : c))]
               .sort((a, b) => b.vote_count - a.vote_count)
           );
           setLastUpdate(new Date());
@@ -91,8 +93,10 @@ export function LiveResults({ initialCandidates, election }: LiveResultsProps) {
           <Trophy size={28} className="text-amber-500 flex-shrink-0" />
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">Winner</p>
-            <p className="text-lg font-extrabold text-slate-900 dark:text-white">{winner.name}</p>
-            {winner.party && <p className="text-sm text-slate-500 dark:text-slate-400">{winner.party}</p>}
+            <p className="text-lg font-extrabold text-slate-900 dark:text-white">{winner.profiles?.name ?? "—"}</p>
+            {winner.profiles?.father_name && (
+              <p className="text-sm text-slate-500 dark:text-slate-400">S/O {winner.profiles.father_name}</p>
+            )}
           </div>
           <div className="ml-auto text-right">
             <p className="text-2xl font-extrabold text-amber-600 dark:text-amber-400">
@@ -105,7 +109,7 @@ export function LiveResults({ initialCandidates, election }: LiveResultsProps) {
 
       {candidates.length === 0 ? (
         <Card className="py-10 text-center">
-          <p className="text-sm text-slate-400">No candidates for this election.</p>
+          <p className="text-sm text-slate-400">No approved candidates for this election.</p>
         </Card>
       ) : (
         <div className="grid gap-6 lg:grid-cols-2">
@@ -123,46 +127,49 @@ export function LiveResults({ initialCandidates, election }: LiveResultsProps) {
             <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700">
               <CardTitle>Live Standings</CardTitle>
             </div>
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50 dark:bg-slate-900">
-                <tr>
-                  {["Rank", "Candidate", "Party", "Votes", "Share", "Progress"].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                {candidates.map((c, i) => {
-                  const pct = total ? (c.vote_count / total) * 100 : 0;
-                  const isFlashing = flashId === c.id;
-                  return (
-                    <tr key={c.id} className={`transition-all duration-500 ${
-                      isFlashing ? "bg-green-50 dark:bg-green-900/20" :
-                      i === 0 && election.status === "closed" ? "bg-amber-50 dark:bg-amber-900/10" :
-                      "hover:bg-slate-50 dark:hover:bg-slate-700/50"
-                    }`}>
-                      <td className="px-4 py-3">
-                        <span className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
-                          i === 0 ? "bg-amber-400 text-white" : i === 1 ? "bg-slate-300 text-slate-700 dark:bg-slate-600 dark:text-slate-200" : i === 2 ? "bg-orange-300 text-white" : "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400"
-                        }`}>{i + 1}</span>
-                      </td>
-                      <td className="px-4 py-3 font-semibold text-slate-900 dark:text-white">{c.name}</td>
-                      <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{c.party ?? "Independent"}</td>
-                      <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">
-                        {c.vote_count.toLocaleString()}
-                        {isFlashing && <span className="ml-1 text-xs text-green-600 dark:text-green-400 animate-bounce">+1</span>}
-                      </td>
-                      <td className="px-4 py-3 font-semibold text-blue-600 dark:text-blue-400">{pct.toFixed(1)}%</td>
-                      <td className="px-4 py-3 w-40">
-                        <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-700">
-                          <div className="h-2 rounded-full bg-blue-500 transition-all duration-700" style={{ width: `${pct}%` }} />
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 dark:bg-slate-900">
+                  <tr>
+                    {["Rank", "Candidate", "Father Name", "CNIC", "Votes", "Share", "Progress"].map((h) => (
+                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                  {candidates.map((c, i) => {
+                    const pct = total ? (c.vote_count / total) * 100 : 0;
+                    const isFlashing = flashId === c.id;
+                    return (
+                      <tr key={c.id} className={`transition-all duration-500 ${
+                        isFlashing ? "bg-green-50 dark:bg-green-900/20" :
+                        i === 0 && election.status === "closed" ? "bg-amber-50 dark:bg-amber-900/10" :
+                        "hover:bg-slate-50 dark:hover:bg-slate-700/50"
+                      }`}>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
+                            i === 0 ? "bg-amber-400 text-white" : i === 1 ? "bg-slate-300 text-slate-700 dark:bg-slate-600 dark:text-slate-200" : i === 2 ? "bg-orange-300 text-white" : "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400"
+                          }`}>{i + 1}</span>
+                        </td>
+                        <td className="px-4 py-3 font-semibold text-slate-900 dark:text-white">{c.profiles?.name ?? "—"}</td>
+                        <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{c.profiles?.father_name ?? "—"}</td>
+                        <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{c.profiles?.cnic ?? "—"}</td>
+                        <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">
+                          {c.vote_count.toLocaleString()}
+                          {isFlashing && <span className="ml-1 text-xs text-green-600 dark:text-green-400 animate-bounce">+1</span>}
+                        </td>
+                        <td className="px-4 py-3 font-semibold text-blue-600 dark:text-blue-400">{pct.toFixed(1)}%</td>
+                        <td className="px-4 py-3 w-40">
+                          <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-700">
+                            <div className="h-2 rounded-full bg-blue-500 transition-all duration-700" style={{ width: `${pct}%` }} />
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </Card>
         </div>
       )}
